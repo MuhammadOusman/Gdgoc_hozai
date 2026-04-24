@@ -1,0 +1,1 @@
+2026-04-24T14:21:16.635Z accepted order_id=sample-ord-001 payload={"order_id":"sample-ord-001","customer":{"name":"Ali Khan","phone":"03001234567"},"shipping":{"address":"Shahrah-e-Faisal, Karachi","city":"Karachi"},"order":{"name":"Nike Air Jordan 1 Mid","size":"41 EUR","qty":1},"customer_history":{"prior_orders":7,"prior_rto":0}}
