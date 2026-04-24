@@ -28,6 +28,32 @@ git clone https://github.com/MuhammadOusman/Gdgoc_hozai.git
 cd Gdgoc_hozai
 ```
 
+## 🚧 Project Layout
+
+- `frontend/` — placeholder for future frontend/UI work.
+- `backend/` — shared server-side logic and webhook validation.
+- `api/` — Vercel serverless endpoints.
+
+## 🚀 Vercel Deployment
+
+This repo is now structured for Vercel deployment.
+
+1. Connect the repo to Vercel.
+2. Add `WEBHOOK_BEARER_SECRET` to Vercel Environment Variables (optional).
+3. Use `/order-webhook` for webhook requests.
+4. Use `/health` for a simple status check.
+
+> Production webhook URL: `https://<your-vercel-app>.vercel.app/order-webhook`
+> 
+> Health check: `https://<your-vercel-app>.vercel.app/health`
+
+For local development, install the Vercel CLI and run:
+
+```bash
+npm install -g vercel
+npm run dev
+```
+
 ## 🤝 Contributing
 
 This project was created as part of a hackathon. Feel free to fork the repository and build on top of it!
