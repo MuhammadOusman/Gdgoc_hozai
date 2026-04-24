@@ -39,12 +39,23 @@ cd Gdgoc_hozai
 This repo is now structured for Vercel deployment.
 
 1. Connect the repo to Vercel.
-2. Add `WEBHOOK_BEARER_SECRET` to Vercel Environment Variables (optional).
-3. Use `/order-webhook` for webhook requests.
+2. Use `/order-webhook` for incoming store webhook requests.
+3. Use `/order-status` for status updates from the store.
 4. Use `/health` for a simple status check.
 5. Open the home page to use the built-in webhook JSON tester UI.
 
-When your store sends a webhook to `/order-webhook`, the home page will also display the latest received payload in real time.
+When your store sends a webhook to `/order-webhook`, the home page will display the latest received payload in real time.
+
+This app also now sends an outbound status update immediately when `/order-webhook` is triggered.
+- It posts a hardcoded `status: "manual"` to `https://flipsidepk.netlify.app/api/order/status`
+- The callback body includes `order_id`, `status`, `reason`, `timestamp`, and `source`
+
+The status callback endpoint accepts:
+- `order_id`
+- `status` = `confirm`, `cancelled`, or `manual`
+- optional `reason`, `timestamp`, and `source`
+
+It maps status values to internal state and returns an acknowledgement JSON.
 
 > Production webhook URL: `https://<your-vercel-app>.vercel.app/order-webhook`
 > 
