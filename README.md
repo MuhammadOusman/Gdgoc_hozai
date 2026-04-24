@@ -42,6 +42,9 @@ This repo is now structured for Vercel deployment.
 2. Add `WEBHOOK_BEARER_SECRET` to Vercel Environment Variables (optional).
 3. Use `/order-webhook` for webhook requests.
 4. Use `/health` for a simple status check.
+5. Open the home page to use the built-in webhook JSON tester UI.
+
+When your store sends a webhook to `/order-webhook`, the home page will also display the latest received payload in real time.
 
 > Production webhook URL: `https://<your-vercel-app>.vercel.app/order-webhook`
 > 

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gdgoc Hozai Webhook Receiver</title>
+  <style>
+    body {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: #0f172a;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      width: min(100%, 960px);
+      padding: 32px;
+      border-radius: 24px;
+      background: rgba(15, 23, 42, 0.96);
+      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.4);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 2.2rem;
+    }
+    p {
+      margin: 0 0 24px;
+      color: #94a3b8;
+      line-height: 1.7;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e2e8f0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.95rem;
+      resize: vertical;
+      margin-bottom: 16px;
+    }
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 22px;
+      border: none;
+      border-radius: 14px;
+      background: #2563eb;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: transform 0.18s ease, background 0.18s ease;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      background: #1d4ed8;
+    }
+    .note {
+      margin-top: 16px;
+      color: #cbd5e1;
+    }
+    .response {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 18px;
+      background: #020617;
+      border: 1px solid #334155;
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: #cbd5e1;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .endpoint {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      background: #020617;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>JSON Webhook Receiver</h1>
+    <p>Paste your webhook payload here and send it to <strong>/order-webhook</strong>. The response from the API will appear below.</p>
+
+    <div class="row">
+      <label for="payload">Webhook JSON</label>
+      <div class="endpoint">POST /order-webhook</div>
+    </div>
+
+    <textarea id="payload">{
+  "order_id": "test-123",
+  "customer": {"name": "Ali Khan", "phone": "03001234567"},
+  "shipping": {"address": "Shahrah-e-Faisal, Karachi", "city": "Karachi"},
+  "order": {"name": "Nike Air Jordan 1 Mid", "size": "41 EUR", "qty": 1},
+  "customer_history": {"prior_orders": 7, "prior_rto": 0}
+}</textarea>
+
+    <button id="sendButton">Send Webhook</button>
+    <div class="note">Note: The page sends the JSON to the same Vercel app that hosts the API.</div>
+
+    <div id="response" class="response">Response will appear here after send.</div>
+
+    <h2 style="margin-top: 32px;">Live store webhook preview</h2>
+    <p class="note">When your store sends a webhook to <strong>/order-webhook</strong>, the latest payload will appear below.</p>
+    <div id="lastPayload" class="response">Waiting for webhook from store...</div>
+  </div>
+
+  <script>
+    const button = document.getElementById('sendButton');
+    const textarea = document.getElementById('payload');
+    const responseBox = document.getElementById('response');
+    const lastPayloadBox = document.getElementById('lastPayload');
+
+    function showResponse(message) {
+      responseBox.textContent = message;
+    }
+
+    async function refreshLastPayload() {
+      try {
+        const res = await fetch('/api/last-webhook');
+        const data = await res.json();
+
+        if (!data.ok) {
+          lastPayloadBox.textContent = `Unable to load latest webhook: ${data.error || 'unknown'}`;
+          return;
+        }
+
+        if (!data.has_payload) {
+          lastPayloadBox.textContent = 'No webhook has been received yet.';
+          return;
+        }
+
+        lastPayloadBox.textContent = `Received at: ${data.received_at}\n\n${JSON.stringify(data.payload, null, 2)}`;
+      } catch (error) {
+        lastPayloadBox.textContent = 'Could not fetch latest webhook: ' + error.message;
+      }
+    }
+
+    button.addEventListener('click', async () => {
+      let payload;
+      try {
+        payload = JSON.parse(textarea.value);
+      } catch (error) {
+        showResponse('Invalid JSON: ' + error.message);
+        return;
+      }
+
+      showResponse('Sending...');
+
+      try {
+        const res = await fetch('/order-webhook', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        showResponse(`Status: ${res.status}\n\n${JSON.stringify(data, null, 2)}`);
+      } catch (error) {
+        showResponse('Request failed: ' + error.message);
+      }
+    });
+
+    refreshLastPayload();
+    setInterval(refreshLastPayload, 5000);
+  </script>
+</body>
+</html>
