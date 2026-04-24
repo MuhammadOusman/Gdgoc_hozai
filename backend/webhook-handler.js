@@ -47,16 +47,6 @@ function validatePayload(payload) {
   return errors;
 }
 
-function isAuthorized(req) {
-  const secret = process.env.WEBHOOK_BEARER_SECRET || "";
-  if (!secret) {
-    return true;
-  }
-  const auth = req.headers.authorization || "";
-  return auth === `Bearer ${secret}`;
-}
-
 module.exports = {
   validatePayload,
-  isAuthorized,
 };

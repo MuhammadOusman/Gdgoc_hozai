@@ -1,24 +1,16 @@
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
-
-const LAST_WEBHOOK_FILE = path.join(os.tmpdir(), "gdgoc-hozai-last-webhook.json");
+const { LAST_WEBHOOK_FILE } = require("../backend/helpers/constants");
+const { readJson } = require("../backend/helpers/storage");
 
 module.exports = (req, res) => {
-  if (req.method !== "GET") {
-    return res.status(405).json({ ok: false, error: "method_not_allowed" });
-  }
+	if (req.method !== "GET") {
+		return res.status(405).json({ ok: false, error: "method_not_allowed" });
+	}
 
-  try {
-    if (!fs.existsSync(LAST_WEBHOOK_FILE)) {
-      return res.status(200).json({ ok: true, has_payload: false, message: "No webhook received yet." });
-    }
+	const data = readJson(LAST_WEBHOOK_FILE);
 
-    const raw = fs.readFileSync(LAST_WEBHOOK_FILE, "utf8");
-    const data = JSON.parse(raw);
-    return res.status(200).json({ ok: true, has_payload: true, ...data });
-  } catch (error) {
-    console.error("Failed to read last webhook payload:", error);
-    return res.status(500).json({ ok: false, error: "failed_to_read_payload" });
-  }
+	if (!data) {
+		return res.status(200).json({ ok: true, has_payload: false, message: "No webhook received yet." });
+	}
+
+	return res.status(200).json({ ok: true, has_payload: true, ...data });
 };

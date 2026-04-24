@@ -1,77 +1,68 @@
 # Gdgoc_hozai
 
-## 🚀 About the Project
+Production-ready webhook receiver and callback bridge deployed on Vercel.
 
-**Gdgoc_hozai** is a 24-hour hackathon project developed for **GDGOC-BWAI** (Google Developer Groups on Campus – Build With AI). The project was built under time pressure as a collaborative effort by a passionate team of developers participating in the hackathon challenge.
+## What This Service Does
 
-## 👥 Team Members
+- Receives order webhooks from the store at `/order-webhook`
+- Validates incoming payloads
+- Logs and exposes the latest received webhook for on-screen debugging
+- Sends a status callback to the store endpoint with hardcoded status `manual` (temporary)
+- Accepts store status updates at `/order-status`
 
-| Name            |
-|-----------------|
-| Ousman          |
-| Hazib           |
-| Abdullah        |
-| Ali Zain        |
-| Maaz ur Rehman  |
+## Repository Structure
 
-## 🛠️ Built With
-
-- Developed during a 24-hour hackathon sprint
-- Powered by collaboration and creativity under **GDGOC-BWAI**
-
-## 📌 Getting Started
-
-Clone the repository and explore the project:
-
-```bash
-git clone https://github.com/MuhammadOusman/Gdgoc_hozai.git
-cd Gdgoc_hozai
+```text
+api/
+  health.js          # Thin wrapper to backend route
+  last-status.js     # Thin wrapper to backend route
+  last-webhook.js    # Thin wrapper to backend route
+  order-status.js    # Thin wrapper to backend route
+  order-webhook.js   # Thin wrapper to backend route
+backend/
+  helpers/
+    constants.js     # Shared constants (files, callback URL)
+    storage.js       # JSON read/write utilities
+  modules/
+    order-status-module.js   # Status API business logic
+    order-webhook-module.js  # Webhook processing + outbound callback logic
+  webhook-handler.js # Shared payload validation helpers
+index.html           # Simple UI to view and test webhook activity
+package.json         # Project scripts
+vercel.json          # Route rewrites
 ```
 
-## 🚧 Project Layout
+## API Endpoints
 
-- `frontend/` — placeholder for future frontend/UI work.
-- `backend/` — shared server-side logic and webhook validation.
-- `api/` — Vercel serverless endpoints.
+- `GET /health`
+- `POST /order-webhook`
+- `GET /api/last-webhook`
+- `POST /order-status`
+- `GET /api/last-status`
 
-## 🚀 Vercel Deployment
+## Current Callback Behavior
 
-This repo is now structured for Vercel deployment.
+On every valid `/order-webhook` event, this service sends:
 
-1. Connect the repo to Vercel.
-2. Use `/order-webhook` for incoming store webhook requests.
-3. Use `/order-status` for status updates from the store.
-4. Use `/health` for a simple status check.
-5. Open the home page to use the built-in webhook JSON tester UI.
+- `POST https://flipsidepk.netlify.app/api/order/status`
+- Payload includes `order_id`, `status`, `reason`, `timestamp`, `source`
+- `status` is currently hardcoded to `manual`
 
-When your store sends a webhook to `/order-webhook`, the home page will display the latest received payload in real time.
-
-This app also now sends an outbound status update immediately when `/order-webhook` is triggered.
-- It posts a hardcoded `status: "manual"` to `https://flipsidepk.netlify.app/api/order/status`
-- The callback body includes `order_id`, `status`, `reason`, `timestamp`, and `source`
-
-The status callback endpoint accepts:
-- `order_id`
-- `status` = `confirm`, `cancelled`, or `manual`
-- optional `reason`, `timestamp`, and `source`
-
-It maps status values to internal state and returns an acknowledgement JSON.
-
-> Production webhook URL: `https://<your-vercel-app>.vercel.app/order-webhook`
-> 
-> Health check: `https://<your-vercel-app>.vercel.app/health`
-
-For local development, install the Vercel CLI and run:
+## Local Development
 
 ```bash
 npm install -g vercel
 npm run dev
 ```
 
-## 🤝 Contributing
+Open:
+- `http://localhost:3000`
 
-This project was created as part of a hackathon. Feel free to fork the repository and build on top of it!
+## Deploy
 
-## 📄 License
+Connect this repo to Vercel with root directory set to `./`.
 
-This project is open source and available under the [MIT License](LICENSE).
+Production URLs:
+- `https://gdgoc-hozai.vercel.app`
+- `https://gdgoc-hozai.vercel.app/order-webhook`
+- `https://gdgoc-hozai.vercel.app/order-status`

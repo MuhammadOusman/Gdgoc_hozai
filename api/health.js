@@ -1,7 +1,7 @@
 module.exports = (req, res) => {
-  if (req.method !== "GET") {
-    return res.status(405).json({ ok: false, error: "method_not_allowed" });
-  }
+	if (req.method !== "GET") {
+		return res.status(405).json({ ok: false, error: "method_not_allowed" });
+	}
 
-  res.status(200).json({ ok: true });
+	res.status(200).json({ ok: true });
 };
