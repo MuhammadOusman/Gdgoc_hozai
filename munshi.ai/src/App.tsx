@@ -26,6 +26,7 @@ import {
 import { cn } from './lib/utils';
 import { InventoryItem, ChatMessage, Order, SellerSettings, ChatThread } from './types';
 import { chatWithDukanSync } from './services/geminiService';
+import { fetchInventory as getInventory, syncOrder } from './services/inventoryService';
 
 // --- Mock Data ---
 const INITIAL_THREADS: ChatThread[] = [
@@ -95,10 +96,7 @@ export default function App() {
     try {
       setIsLoading(true);
       addLog("Fetching inventory from Google Sheets...");
-      // Explicitly targeting "Inventory" sheet name
-      const response = await fetch('/api/inventory?sheet=Inventory');
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const data = await response.json();
+      const data = await getInventory();
       setInventory(data);
       addLog(`Loaded ${data.length} items from inventory`);
     } catch (error: any) {
@@ -1080,18 +1078,7 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
 
       addLog(`[SYNC] Sending order to "Orders" sheet...`);
       
-      const response = await fetch('/api/inventory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(syncPayload)
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        addLog(`Sheet Sync Failed: ${JSON.stringify(responseData)}`, 'error');
-        throw new Error('Sync Error');
-      }
+      const responseData = await syncOrder(syncPayload);
 
       addLog(`Sheet Sync Success: ${responseData.message || 'Data Logged'}`);
 
