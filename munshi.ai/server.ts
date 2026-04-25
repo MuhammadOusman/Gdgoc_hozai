@@ -9,6 +9,19 @@ const __dirname = path.dirname(__filename);
 
 const GOOGLE_SHEET_API = "https://script.google.com/macros/s/AKfycbxPNhvPdHM29jTWgMFUHO-Zs-8gcgxfVM8t-TbSdLzaBar9aPmvkKiCfCdp6NOeGSmSSQ/exec";
 
+function normalizeInventoryItem(item: any, index: number) {
+  return {
+    id: String(item.id || item.slug || index + 1),
+    name: String(item.name || [item.brand, item.model].filter(Boolean).join(" ") || "Unknown item"),
+    size: String(item.size || item.size_eur || item.size_us || item.variant || ""),
+    price: Number(item.price || item.sale_price || item.amount || 0),
+    stock: Number(item.stock ?? (item.status === "available" ? 1 : 0)),
+    category: String(item.category || item.brand || item.type || "Uncategorized"),
+    description: String(item.description || item.condition || item.condition_grade || ""),
+    _original: item,
+  };
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -31,16 +44,9 @@ async function startServer() {
         throw new Error("Invalid data format received from Google Sheets");
       }
 
-      const mappedData = rawData.map((item: any, index: number) => ({
-        id: item.slug || String(index + 1),
-        name: `${item.brand} ${item.model}`,
-        size: String(item.size_eur),
-        price: Number(item.price),
-        stock: item.status === 'available' ? 1 : 0,
-        category: item.brand,
-        description: `${item.brand} ${item.model} Condition: ${item.condition_grade}`,
-        _original: item // Preserve original data for syncing purposes
-      }));
+      const mappedData = rawData
+        .map((item: any, index: number) => normalizeInventoryItem(item, index))
+        .filter((item: any) => item.name.trim() !== "Unknown item" && item.id.trim() !== "");
       res.json(mappedData);
     } catch (error: any) {
       console.error("Error fetching inventory:", error.message);

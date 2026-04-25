@@ -27,39 +27,7 @@ import { cn } from './lib/utils';
 import { InventoryItem, ChatMessage, Order, SellerSettings, ChatThread } from './types';
 import { chatWithDukanSync } from './services/geminiService';
 import { fetchInventory as getInventory, syncOrder } from './services/inventoryService';
-
-// --- Mock Data ---
-const INITIAL_THREADS: ChatThread[] = [
-  {
-    id: 't1',
-    customerName: 'Ali Ahmed',
-    lastMessage: 'Price kitni hai?',
-    timestamp: Date.now() - 1000 * 60 * 5,
-    unreadCount: 1,
-    isAiEnabled: true,
-    messages: [
-      { id: '1', role: 'user', content: 'Salam, ye shirt medium size mein hai?', timestamp: Date.now() - 1000 * 60 * 15 },
-      { id: '2', role: 'assistant', content: 'Walaikum Assalam! G bilkul, Cotton Lawn Shirt medium size mein available hai. Iski price Rs. 2,500 hai. Kya main apke liye pack kardu?', timestamp: Date.now() - 1000 * 60 * 14 },
-      { id: '3', role: 'user', content: 'Price kitni hai?', timestamp: Date.now() - 1000 * 60 * 5 },
-    ]
-  },
-  {
-    id: 't2',
-    customerName: 'Sania Khan',
-    lastMessage: 'Address send kardu?',
-    timestamp: Date.now() - 1000 * 60 * 60 * 2,
-    isAiEnabled: true,
-    messages: []
-  },
-  {
-    id: 't3',
-    customerName: 'Zainab Qureshi',
-    lastMessage: 'Delivery kab tak hogi?',
-    timestamp: Date.now() - 1000 * 60 * 60 * 5.5,
-    isAiEnabled: false,
-    messages: []
-  }
-];
+import { fetchChats, sendMessage as apiSendMessage, ChatThread as ApiChatThread } from './services/chatService';
 
 const INITIAL_SETTINGS: SellerSettings = {
   storeName: 'flipside.pk',
@@ -76,7 +44,9 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [settings, setSettings] = useState<SellerSettings>(INITIAL_SETTINGS);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [threads, setThreads] = useState<ChatThread[]>(INITIAL_THREADS);
+  const [threads, setThreads] = useState<ApiChatThread[]>([]);
+  const [selectedThread, setSelectedThread] = useState<ApiChatThread | null>(null);
+  const [manualMessage, setManualMessage] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const addLog = (msg: string, type: 'info' | 'error' = 'info') => {
@@ -85,7 +55,19 @@ export default function App() {
 
   useEffect(() => {
     fetchInventory();
+    fetchChatThreads();
+    const interval = setInterval(fetchChatThreads, 5000); // Poll every 5 seconds
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchChatThreads = async () => {
+    try {
+      const data = await fetchChats();
+      setThreads(data);
+    } catch (error) {
+      console.error('Failed to fetch chats:', error);
+    }
+  };
 
   const fetchInventory = async () => {
     try {
@@ -144,7 +126,7 @@ export default function App() {
               transition={{ duration: 0.2 }}
               className="h-full"
             >
-              {activeTab === 'dashboard' && <DashboardView orders={orders} />}
+              {activeTab === 'dashboard' && <DashboardView orders={orders} activeChatCount={threads.length} />}
               {activeTab === 'inventory' && <InventoryView inventory={inventory} setInventory={setInventory} onRefresh={fetchInventory} />}
               {activeTab === 'chat' && (
                 <LiveChatsView 
@@ -157,7 +139,7 @@ export default function App() {
               )}
               {activeTab === 'codsync' && <CODSyncView onNavigateToRecordings={() => setActiveTab('recordings')} />}
               {activeTab === 'recordings' && <RecordingsView onBack={() => setActiveTab('codsync')} />}
-              {activeTab === 'settings' && <SettingsView settings={settings} setSettings={setSettings} showDebug={showDebug} setShowDebug={setShowDebug} />}
+              {activeTab === 'settings' && <SettingsView settings={settings} setSettings={setSettings} />}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -682,9 +664,9 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }: {
 
 // --- Views ---
 
-function DashboardView({ orders }: { orders: Order[] }) {
+function DashboardView({ orders, activeChatCount }: { orders: Order[]; activeChatCount: number }) {
   const stats = [
-    { label: 'Active Chats', value: '24', change: '+5', icon: MessageSquare, color: 'text-vibrant-teal' },
+    { label: 'Active Chats', value: String(activeChatCount), change: 'Live', icon: MessageSquare, color: 'text-vibrant-teal' },
     { label: 'Total Orders', value: String(orders.length), change: 'Live', icon: Store, color: 'text-soft-gold' },
   ];
 
@@ -855,67 +837,23 @@ function InventoryView({ inventory, setInventory, onRefresh }: { inventory: Inve
 }
 
 function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreated }: {
-  threads: ChatThread[], 
+  threads: ApiChatThread[], 
   setThreads: any,
   inventory: InventoryItem[], 
   settings: SellerSettings,
   onOrderCreated: (order: Order) => void
 }) {
-  const [activeThreadId, setActiveThreadId] = useState(threads[0]?.id);
-  const [input, setInput] = useState('');
+  const [activeThreadId, setActiveThreadId] = useState<string | null>(threads[0]?.id || null);
+  const [manualMessage, setManualMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-
-  // Order Form State
+  const [isSending, setIsSending] = useState(false);
   const [fromName, setFromName] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formAddress, setFormAddress] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
+  const scrollRef = React.useRef<HTMLDivElement>(null);
 
   const activeThread = threads.find(t => t.id === activeThreadId);
-
-  const simulateCustomerMsg = async (content: string) => {
-    if (!activeThread || isLoading) return;
-
-    const userMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content,
-      timestamp: Date.now(),
-    };
-
-    const updatedMessages = [...activeThread.messages, userMsg];
-    
-    setThreads((prev: ChatThread[]) => prev.map(t => 
-      t.id === activeThreadId 
-        ? { ...t, messages: updatedMessages, lastMessage: content, timestamp: Date.now() }
-        : t
-    ));
-
-    if (activeThread.isAiEnabled) {
-      setIsLoading(true);
-      const history = updatedMessages.map(m => ({
-        role: (m.role === 'assistant' ? 'model' : 'user') as 'model' | 'user',
-        parts: [{ text: m.content }]
-      }));
-
-      const aiResponse = await chatWithDukanSync(content, history, inventory, settings);
-
-      const botMsg: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: aiResponse,
-        timestamp: Date.now(),
-      };
-
-      setThreads((prev: ChatThread[]) => prev.map(t => 
-        t.id === activeThreadId 
-          ? { ...t, messages: [...t.messages, botMsg], lastMessage: aiResponse, timestamp: Date.now() }
-          : t
-      ));
-      setIsLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -923,36 +861,21 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
     }
   }, [activeThread?.messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading || !activeThread) return;
+  const handleSendManual = async () => {
+    if (!manualMessage.trim() || isSending || !activeThreadId) return;
 
-    const adminMsg: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: input,
-      timestamp: Date.now(),
-    };
-
-    const updatedMessages = [...activeThread.messages, adminMsg];
-    
-    const updatedThreads = threads.map(t => 
-      t.id === activeThreadId 
-        ? { ...t, messages: updatedMessages, lastMessage: input, timestamp: Date.now(), isAiEnabled: false }
-        : t
-    );
-    setThreads(updatedThreads);
-    setInput('');
-
-    // If AI was enabled, normally it would reply, but user requested manual override to turn it off.
-    // However, if the user explicitly WANTED a bot reply, they would leave it on.
-    // But the prompt says "manual override pr hum ai bot ko override krenge or ai assist automatically band hojayega"
-    // So logic: if admin sends, isAiEnabled = false.
-  };
-
-  const toggleAi = (id: string) => {
-    setThreads((prev: ChatThread[]) => prev.map(t => 
-      t.id === id ? { ...t, isAiEnabled: !t.isAiEnabled } : t
-    ));
+    setIsSending(true);
+    try {
+      await apiSendMessage(activeThreadId, manualMessage);
+      setManualMessage('');
+      // Refresh threads after sending
+      const updatedThreads = await fetchChats();
+      setThreads(updatedThreads);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -1070,11 +993,7 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
                 </div>
                 <p className="text-xs text-dark-navy/60 truncate font-medium">{thread.lastMessage}</p>
                 <div className="mt-1 flex items-center gap-1.5">
-                  {thread.isAiEnabled ? (
-                    <span className="text-[8px] bg-vibrant-teal/10 text-vibrant-teal px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border border-vibrant-teal/20">AI Active</span>
-                  ) : (
-                    <span className="text-[8px] bg-dark-navy/10 text-dark-navy px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border border-dark-navy/20">Manual</span>
-                  )}
+                  <span className="text-[8px] bg-vibrant-teal/10 text-vibrant-teal px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border border-vibrant-teal/20">Live</span>
                 </div>
               </div>
             </button>
@@ -1094,42 +1013,11 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
                 <div>
                   <p className="font-black text-deep-charcoal text-sm tracking-tight">{activeThread.customerName}</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-[10px] text-vibrant-teal font-bold uppercase tracking-widest">Active Store Conversation</p>
-                    <button 
-                      onClick={() => {
-                        const queries = [
-                          "Price check karein plz",
-                          "Delivery charges kitne hain?",
-                          "Cash on delivery available hai?",
-                          "Size chart mil sakta hai?",
-                          "Order confirm kardi k?"
-                        ];
-                        const q = queries[Math.floor(Math.random() * queries.length)];
-                        simulateCustomerMsg(q);
-                      }}
-                      className="text-[9px] bg-vibrant-teal/10 text-vibrant-teal px-1.5 py-0.5 rounded-full font-black uppercase border border-vibrant-teal/20 hover:bg-vibrant-teal/20 transition-all"
-                    >
-                      Simulate DM
-                    </button>
+                    <p className="text-[10px] text-vibrant-teal font-bold uppercase tracking-widest">Live WhatsApp Chat</p>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 glass-dark rounded-full border border-dark-navy/10">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-dark-navy/60">AI Assist</span>
-                  <button 
-                    onClick={() => toggleAi(activeThread.id)}
-                    className={cn(
-                      "w-10 h-5 rounded-full p-1 transition-all relative border border-dark-navy/10",
-                      activeThread.isAiEnabled ? "bg-vibrant-teal" : "bg-dark-navy/20"
-                    )}
-                  >
-                    <div className={cn(
-                      "w-3 h-3 bg-white rounded-full transition-all shadow-sm",
-                      activeThread.isAiEnabled ? "ml-5" : "ml-0"
-                    )} />
-                  </button>
-                </div>
                 <button className="p-2 text-dark-navy/40 hover:text-dark-navy transition-colors">
                   <MoreVertical size={20} />
                 </button>
@@ -1176,16 +1064,16 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  placeholder={activeThread.isAiEnabled ? "AI is assisting... Type to override" : "Type manual message..."}
+                  placeholder="Type manual reply to customer..."
                   className="flex-1 px-4 py-3 glass rounded-2xl border-none focus:ring-1 focus:ring-vibrant-teal/30 text-sm placeholder:text-dark-navy/30 text-deep-charcoal font-medium"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                  value={manualMessage}
+                  onChange={(e) => setManualMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendManual()}
                 />
                 <button 
-                  onClick={handleSend}
+                  onClick={handleSendManual}
                   className="p-3 bg-vibrant-teal text-white rounded-2xl hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 shadow-xl shadow-vibrant-teal/20"
-                  disabled={isLoading || !input.trim()}
+                  disabled={isSending || !manualMessage.trim()}
                 >
                   <Send size={20} />
                 </button>
