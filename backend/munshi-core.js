@@ -6,7 +6,7 @@ const express = require('express');
 const cors = require('cors');
 
 const SHEETDB_URL = 'https://script.google.com/macros/s/AKfycbxPNhvPdHM29jTWgMFUHO-Zs-8gcgxfVM8t-TbSdLzaBar9aPmvkKiCfCdp6NOeGSmSSQ/exec';
-const GEMINI_API_KEY = 'AIzaSyBFX21Ry4tkI1Imh9RKsIJbYQFmJk_lhkg';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const API_PORT = Number(process.env.API_PORT || process.env.PORT || 3001);
 
 function logServerError(context, err, extra = {}) {
@@ -22,7 +22,7 @@ function logServerError(context, err, extra = {}) {
 
 // ⚡ INIT MODEL ONCE (not on every message)
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 // ⚡ CACHE INVENTORY (refresh every 5 min)
 let cachedInventory = null;

@@ -4,11 +4,11 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fetch = require('node-fetch');
 
 const SHEETDB_URL = 'https://script.google.com/macros/s/AKfycbxPNhvPdHM29jTWgMFUHO-Zs-8gcgxfVM8t-TbSdLzaBar9aPmvkKiCfCdp6NOeGSmSSQ/exec';
-const GEMINI_API_KEY = 'AIzaSyBFX21Ry4tkI1Imh9RKsIJbYQFmJk_lhkg';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // ⚡ INIT MODEL ONCE (not on every message)
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 // ⚡ CACHE INVENTORY (refresh every 5 min)
 let cachedInventory = null;

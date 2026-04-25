@@ -9,7 +9,7 @@ export async function chatWithDukanSync(
   inventory: InventoryItem[],
   settings: SellerSettings
 ) {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-1.5-flash";
   
   // Use custom API key if provided, otherwise fallback to default
   const ai = settings.geminiApiKey 
