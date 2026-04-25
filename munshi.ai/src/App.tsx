@@ -62,7 +62,7 @@ const INITIAL_THREADS: ChatThread[] = [
 ];
 
 const INITIAL_SETTINGS: SellerSettings = {
-  storeName: 'Munshi.Ai Demo',
+  storeName: 'flipside.pk',
   currency: 'Rs.',
   minMargin: 0.1,
   urduTone: 'polite',
@@ -78,24 +78,18 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [threads, setThreads] = useState<ChatThread[]>(INITIAL_THREADS);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [debugLogs, setDebugLogs] = useState<{msg: string, type: 'info' | 'error', time: string}[]>([]);
-  const [showDebug, setShowDebug] = useState(false);
 
   const addLog = (msg: string, type: 'info' | 'error' = 'info') => {
-    const newLog = { msg, type, time: new Date().toLocaleTimeString() };
-    setDebugLogs(prev => [newLog, ...prev].slice(0, 50));
     console.log(`[Dukaansync]: ${msg}`);
   };
 
   useEffect(() => {
-    addLog("Munshi.Ai Initialized");
     fetchInventory();
   }, []);
 
   const fetchInventory = async () => {
     try {
       setIsLoading(true);
-      addLog("Fetching inventory from Google Sheets...");
       const data = await getInventory();
       setInventory(data);
       addLog(`Loaded ${data.length} items from inventory`);
@@ -108,7 +102,7 @@ export default function App() {
   };
 
   return (
-    <div className="flex h-screen p-6 gap-6 font-sans overflow-hidden bg-slate-50">
+    <div className="flex h-screen p-6 gap-6 font-sans overflow-hidden bg-light-grey text-deep-charcoal">
       {/* Sidebar */}
       <Sidebar 
         activeTab={activeTab} 
@@ -118,39 +112,39 @@ export default function App() {
       />
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden max-w-6xl mx-auto w-full">
         {/* Header */}
-        <header className="h-16 px-6 glass rounded-2xl flex items-center justify-between mb-6 border border-white/40 shadow-sm bg-white/30">
+        <header className="h-16 px-6 glass rounded-2xl flex items-center justify-between mb-6 border border-dark-navy/10 shadow-sm mt-2">
           <div className="flex items-center gap-3">
             {!isSidebarOpen && (
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-white/20 rounded-lg transition-colors">
-                <Menu size={20} className="text-indigo-900" />
+              <button onClick={() => setIsSidebarOpen(true)} className="p-2 hover:bg-dark-navy/5 rounded-lg transition-colors mr-2">
+                <Menu size={20} className="text-dark-navy" />
               </button>
             )}
-            <h1 className="text-xl font-black text-[#1A1A1A] tracking-tight">
-              {activeTab === 'chat' ? 'Live Chats' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+            <h1 className="text-xl font-black text-deep-charcoal tracking-tight uppercase">
+              {activeTab === 'chat' ? 'Live Chats' : activeTab === 'codsync' ? 'Voice Agent' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
             </h1>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 glass-dark px-3 py-1.5 rounded-full border border-white/20">
+            <div className="flex items-center gap-2 glass-dark px-3 py-1.5 rounded-full border border-dark-navy/10">
               <div className="status-glow" />
-              <span className="text-xs font-black text-indigo-900 uppercase tracking-tighter">System Live</span>
+              <span className="text-[10px] font-black text-dark-navy uppercase tracking-widest">System Live</span>
             </div>
           </div>
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
               className="h-full"
             >
-              {activeTab === 'dashboard' && <DashboardView orders={orders} debugLogs={debugLogs} showDebug={showDebug} setShowDebug={setShowDebug} />}
+              {activeTab === 'dashboard' && <DashboardView orders={orders} />}
               {activeTab === 'inventory' && <InventoryView inventory={inventory} setInventory={setInventory} onRefresh={fetchInventory} />}
               {activeTab === 'chat' && (
                 <LiveChatsView 
@@ -159,7 +153,6 @@ export default function App() {
                   inventory={inventory} 
                   settings={settings} 
                   onOrderCreated={(o) => setOrders([o, ...orders])}
-                  addLog={addLog}
                 />
               )}
               {activeTab === 'codsync' && <CODSyncView onNavigateToRecordings={() => setActiveTab('recordings')} />}
@@ -170,33 +163,6 @@ export default function App() {
         </div>
       </main>
 
-      {/* Debug Console Overlay */}
-      <AnimatePresence>
-        {showDebug && (
-          <motion.div 
-            initial={{ y: 300 }}
-            animate={{ y: 0 }}
-            exit={{ y: 300 }}
-            className="fixed bottom-6 right-6 w-96 h-64 bg-slate-900/95 backdrop-blur-md rounded-3xl z-[100] border border-white/10 shadow-2xl overflow-hidden flex flex-col"
-          >
-            <div className="p-3 bg-white/5 border-b border-white/10 flex justify-between items-center">
-              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Dukaansync Debug Logs</span>
-              <button onClick={() => setShowDebug(false)} className="text-white/40 hover:text-white">
-                <ChevronLeft size={16} className="rotate-[-90deg]" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 font-mono text-[10px] space-y-2">
-              {debugLogs.length === 0 && <p className="text-white/20 italic">No logs yet...</p>}
-              {debugLogs.map((log, i) => (
-                <div key={i} className={cn("flex gap-3", log.type === 'error' ? "text-rose-400" : "text-emerald-400")}>
-                  <span className="opacity-30 flex-shrink-0">{log.time}</span>
-                  <span className="break-all">{log.msg}</span>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -645,63 +611,69 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }: {
       initial={false}
       animate={{ width: isOpen ? 260 : 0 }}
       className={cn(
-        "glass rounded-3xl flex flex-col h-full z-20 relative transition-all overflow-hidden border border-white/40 bg-white/30 shadow-xl",
+        "bg-deep-charcoal rounded-3xl flex flex-col h-full z-20 relative transition-all overflow-hidden border border-white/5 shadow-2xl",
         !isOpen && "border-none"
       )}
     >
-      <div className="p-6 flex flex-col min-w-[260px]">
-        <div className="mb-10">
-          <div className="text-2xl font-black tracking-tighter text-indigo-900">Munshi.Ai<span className="text-rose-500">.</span></div>
-          <div className="text-[10px] uppercase tracking-widest font-bold opacity-50">Instant Commerce Agent</div>
+      <div className="p-8 flex flex-col min-w-[260px]">
+        <div className="mb-10 relative">
+          <div className="text-2xl font-black tracking-tighter text-white">Munshi.Ai<span className="text-vibrant-teal">.</span></div>
+          <div className="text-[9px] uppercase tracking-[0.2em] font-black text-vibrant-teal/60">Instant Commerce Agent</div>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="absolute -right-2 top-1 text-white/20 hover:text-white transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
         </div>
       </div>
 
-      <nav className="flex-1 px-3 space-y-4 min-w-[260px]">
+      <nav className="flex-1 px-4 space-y-6 min-w-[260px]">
         <div>
-          <p className="px-4 text-[9px] font-black uppercase tracking-widest text-indigo-900/40 mb-2">Chat Agent (DukaanSync)</p>
+          <p className="px-4 text-[9px] font-black uppercase tracking-widest text-white/30 mb-3">Core Agent</p>
           <div className="space-y-1">
             {menuItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                  "w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group",
                   activeTab === item.id 
-                    ? "glass-dark font-bold text-indigo-900 border border-white/30 shadow-sm" 
-                    : "text-indigo-900/60 hover:bg-white/20 hover:text-indigo-900"
+                    ? "bg-vibrant-teal text-deep-charcoal font-black shadow-lg shadow-vibrant-teal/20"
+                    : "text-white/50 hover:bg-white/5 hover:text-white"
                 )}
               >
-                <item.icon size={18} />
-                <span className="font-bold uppercase text-[10px] tracking-widest">{item.label}</span>
+                <item.icon size={18} className={cn(activeTab === item.id ? "text-deep-charcoal" : "group-hover:text-vibrant-teal transition-colors")} />
+                <span className="font-black uppercase text-[10px] tracking-widest">{item.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <p className="px-4 text-[9px] font-black uppercase tracking-widest text-indigo-900/40 mb-2">Voice Agent (CODSync)</p>
+          <p className="px-4 text-[9px] font-black uppercase tracking-widest text-white/30 mb-3">Advanced</p>
           <button
             onClick={() => setActiveTab('codsync')}
             className={cn(
-              "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200",
+              "w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all duration-200 group",
               activeTab === 'codsync' 
-                ? "glass-dark font-bold text-indigo-900 border border-white/30 shadow-sm" 
-                : "text-indigo-900/60 hover:bg-white/20 hover:text-indigo-900"
+                ? "bg-vibrant-teal text-deep-charcoal font-black shadow-lg shadow-vibrant-teal/20"
+                : "text-white/50 hover:bg-white/5 hover:text-white"
             )}
           >
             <div className="flex items-center gap-3">
-              <Bot size={18} />
-              <span className="font-bold uppercase text-[10px] tracking-widest">Voice Dashboard</span>
+              <Bot size={18} className={cn(activeTab === 'codsync' ? "text-deep-charcoal" : "group-hover:text-vibrant-teal transition-colors")} />
+              <span className="font-black uppercase text-[10px] tracking-widest">Voice Agent</span>
             </div>
-            <Zap size={12} className={activeTab === 'codsync' ? 'text-rose-500' : 'opacity-20'} />
+            <Zap size={12} className={activeTab === 'codsync' ? 'text-deep-charcoal' : 'text-vibrant-teal animate-pulse'} />
           </button>
         </div>
       </nav>
 
-      <div className="p-6 border-t border-white/20 min-w-[260px]">
-        <div className="p-4 glass-dark rounded-2xl border border-white/10">
-          <div className="text-[10px] uppercase opacity-50 mb-1 text-indigo-900 font-black">Linked Store</div>
-          <div className="text-sm font-black text-indigo-950 truncate">Munshi.Ai Demo Shop</div>
+      <div className="p-6 mt-auto min-w-[260px]">
+        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+          <div className="text-[9px] uppercase text-white/30 mb-1 font-black tracking-widest">Connected Store</div>
+          <div className="text-xs font-black text-vibrant-teal truncate">flipside.pk</div>
         </div>
       </div>
     </motion.aside>
@@ -710,121 +682,72 @@ function Sidebar({ activeTab, setActiveTab, isOpen, setIsOpen }: {
 
 // --- Views ---
 
-function DashboardView({ orders, debugLogs, showDebug, setShowDebug }: { orders: Order[], debugLogs: any[], showDebug: boolean, setShowDebug: any }) {
+function DashboardView({ orders }: { orders: Order[] }) {
   const stats = [
-    { label: 'Active Chats', value: '24', change: '+5', icon: MessageSquare, color: 'text-emerald-500' },
-    { label: 'Total Orders', value: String(orders.length), change: 'Live', icon: Store, color: 'text-rose-500' },
+    { label: 'Active Chats', value: '24', change: '+5', icon: MessageSquare, color: 'text-vibrant-teal' },
+    { label: 'Total Orders', value: String(orders.length), change: 'Live', icon: Store, color: 'text-soft-gold' },
   ];
 
   return (
-    <div className="space-y-6 pb-6 overflow-y-auto h-[calc(100vh-120px)] pr-2">
+    <div className="space-y-6 pb-6 pr-2">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {stats.map((stat, i) => (
-          <div key={i} className="glass p-8 rounded-3xl transition-transform hover:scale-[1.02] cursor-default border border-white/40 shadow-sm bg-white/30">
+          <div key={i} className="glass p-8 rounded-3xl transition-all hover:shadow-lg hover:border-vibrant-teal/30 cursor-default border border-dark-navy/10 shadow-sm group">
             <div className="flex items-center justify-between mb-4">
-              <div className={cn("p-4 rounded-2xl glass-dark border border-white/20", stat.color)}>
+              <div className={cn("p-4 rounded-2xl bg-dark-navy/5 group-hover:bg-vibrant-teal/10 transition-colors border border-dark-navy/5", stat.color)}>
                 <stat.icon size={32} />
               </div>
-              <span className="text-[11px] font-black text-emerald-600 px-3 py-1 glass-dark rounded-full border border-emerald-500/10">
+              <span className="text-[11px] font-black text-vibrant-teal px-3 py-1 bg-vibrant-teal/5 rounded-full border border-vibrant-teal/10">
                 {stat.change}
               </span>
             </div>
-            <p className="text-sm text-indigo-900/60 font-black uppercase tracking-widest">{stat.label}</p>
-            <h3 className="text-4xl font-black mt-2 text-indigo-950 underline decoration-indigo-300 underline-offset-4 tracking-tight">{stat.value}</h3>
+            <p className="text-xs text-dark-navy/40 font-black uppercase tracking-[0.2em]">{stat.label}</p>
+            <h3 className="text-4xl font-black mt-2 text-deep-charcoal tracking-tight">{stat.value}</h3>
           </div>
         ))}
       </div>
 
-      {/* Debug Logs Section (Always visible on dashboard if user wants) */}
-      <div className="glass rounded-[40px] p-8 border border-rose-400/20 shadow-sm bg-slate-900/5">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-black text-indigo-950 flex items-center gap-2">
-            <Bot size={24} className="text-indigo-600" />
-            Live Sync Logs (Google Sheets)
+      {/* Recent Orders List */}
+      <div className="glass rounded-[40px] p-8 border border-dark-navy/10 shadow-sm">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-black text-deep-charcoal flex items-center gap-3 uppercase tracking-tight">
+            <div className="p-2 bg-vibrant-teal/10 rounded-lg text-vibrant-teal">
+              <Truck size={20} />
+            </div>
+            Recent Verified Orders
           </h3>
-          <button 
-            onClick={() => setShowDebug(!showDebug)}
-            className="text-[10px] font-black bg-indigo-600 text-white px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg shadow-indigo-500/20"
-          >
-            {showDebug ? 'Hide Details' : 'Show Details'}
-          </button>
+          <button className="text-[10px] font-black text-dark-navy/40 hover:text-dark-navy uppercase tracking-widest transition-colors">View All</button>
         </div>
         
-        {showDebug && (
-          <div className="bg-slate-900 rounded-[30px] p-6 font-mono text-[11px] h-64 overflow-y-auto border border-white/10 shadow-inner">
-            {debugLogs.length === 0 && <p className="text-white/20 italic">No activity logs recorded yet.</p>}
-            {debugLogs.map((log, i) => (
-              <div key={i} className={cn("mb-2 flex gap-3", log.type === 'error' ? "text-rose-400" : "text-emerald-400")}>
-                <span className="opacity-30 flex-shrink-0">[{log.time}]</span>
-                <span className="break-all">{log.msg}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {!showDebug && (
-          <div className="flex items-center gap-3 text-indigo-900/40 italic text-sm font-bold bg-white/20 p-4 rounded-2xl border border-white/40">
-             <AlertCircle size={16} />
-             System monitoring active. Enable "Show Details" to view technical handshake with Sheet API.
-          </div>
-        )}
-      </div>
-
-      {/* Recent Orders List */}
-      <div className="glass rounded-[40px] p-8 border border-white/40 shadow-sm bg-white/30">
-        <h3 className="text-xl font-black text-indigo-950 mb-6 flex items-center gap-2">
-          <Truck size={24} className="text-rose-500" />
-          Recent Verified Orders
-        </h3>
         <div className="space-y-4">
           {orders.length === 0 ? (
-            <div className="p-12 text-center glass-dark rounded-3xl border border-white/10 opacity-40 italic font-black uppercase text-[10px] tracking-[0.2em] text-indigo-900">
-              No orders placed yet
+            <div className="p-20 text-center glass rounded-3xl border border-dark-navy/5 bg-dark-navy/[0.02]">
+              <div className="w-16 h-16 bg-dark-navy/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShoppingCart className="text-dark-navy/20" size={24} />
+              </div>
+              <p className="italic font-black uppercase text-[10px] tracking-[0.2em] text-dark-navy/30">
+                No orders placed yet
+              </p>
             </div>
           ) : (
             orders.map((order) => (
-              <div key={order.id} className="p-5 glass-dark rounded-3xl border border-white/10 flex items-center justify-between gap-4">
+              <div key={order.id} className="p-5 hover:bg-dark-navy/[0.02] rounded-3xl border border-transparent hover:border-dark-navy/5 transition-all flex items-center justify-between gap-4 group">
                 <div className="flex items-center gap-4">
-                   <div className="w-12 h-12 bg-white/50 rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm font-black">
+                   <div className="w-12 h-12 glass rounded-2xl flex items-center justify-center text-dark-navy/30 group-hover:text-vibrant-teal shadow-sm font-black transition-colors border border-dark-navy/5">
                       {order.customerName[0]}
                    </div>
                    <div>
-                      <p className="font-black text-indigo-950 text-sm">{order.customerName}</p>
-                      <p className="text-[10px] text-indigo-900/50 font-bold uppercase tracking-widest">{order.address}</p>
+                      <p className="font-black text-deep-charcoal text-sm">{order.customerName}</p>
+                      <p className="text-[10px] text-dark-navy/40 font-bold uppercase tracking-widest">{order.address}</p>
                    </div>
                 </div>
                 <div className="text-right">
-                   <p className="font-black text-indigo-950 text-sm">Rs. {order.totalPrice}</p>
-                   <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded-full font-black border border-emerald-500/20 uppercase">Verified</span>
+                   <p className="font-black text-deep-charcoal text-sm">Rs. {order.totalPrice}</p>
+                   <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-2.5 py-1 rounded-full font-black border border-emerald-500/20 uppercase tracking-widest">Verified</span>
                 </div>
               </div>
             ))
           )}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6">
-        <div className="glass rounded-[40px] p-8 border border-white/40 shadow-sm bg-white/30">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-bold text-lg text-indigo-900">Live Agent Health</h3>
-            <div className="flex items-center gap-2">
-              <div className="status-glow" />
-              <span className="text-[10px] font-black text-indigo-900/60 uppercase">Munshi AI Online</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 glass-dark rounded-2xl border border-white/10">
-              <p className="text-[10px] font-black text-indigo-900/40 uppercase mb-2">Avg Response Time</p>
-              <p className="text-xl font-black text-indigo-950">1.4s</p>
-            </div>
-            <div className="p-4 glass-dark rounded-2xl border border-white/10">
-              <p className="text-[10px] font-black text-indigo-900/40 uppercase mb-2">Sales Conversion</p>
-              <p className="text-xl font-black text-indigo-950">64%</p>
-            </div>
-            <div className="p-4 glass-dark rounded-2xl border border-white/10">
-              <p className="text-[10px] font-black text-indigo-900/40 uppercase mb-2">Address Extraction</p>
-              <p className="text-xl font-black text-indigo-950">92%</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -852,12 +775,12 @@ function InventoryView({ inventory, setInventory, onRefresh }: { inventory: Inve
   return (
     <div className="space-y-6 pb-6">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-900/40" size={18} />
+        <div className="relative flex-1 max-w-md group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-navy/20 group-focus-within:text-vibrant-teal transition-colors" size={18} />
           <input 
             type="text" 
-            placeholder="Search inventory..."
-            className="w-full pl-10 pr-4 py-3 glass rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-indigo-950 placeholder:text-indigo-900/30 font-medium border border-white/20 shadow-sm bg-white/30"
+            placeholder="Search products by name or category..."
+            className="w-full pl-12 pr-4 py-4 glass rounded-2xl focus:outline-none focus:ring-2 focus:ring-vibrant-teal/20 text-deep-charcoal placeholder:text-dark-navy/20 font-bold border border-dark-navy/10 shadow-sm transition-all text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -867,64 +790,60 @@ function InventoryView({ inventory, setInventory, onRefresh }: { inventory: Inve
             onClick={handleSync}
             disabled={isSyncing}
             className={cn(
-              "glass text-indigo-700 px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-xs uppercase tracking-widest border border-indigo-200",
+              "bg-vibrant-teal text-deep-charcoal px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-xl shadow-vibrant-teal/20 active:scale-95 text-[10px] uppercase tracking-widest border border-vibrant-teal/10",
               isSyncing && "opacity-50 cursor-not-allowed"
             )}
           >
             <Zap size={18} className={cn(isSyncing && "animate-pulse")} />
-            {isSyncing ? 'Syncing...' : 'Sync Google Sheets'}
-          </button>
-          <button className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/20 active:scale-95 text-xs uppercase tracking-widest">
-            <Plus size={20} />
-            Add Product
+            {isSyncing ? 'Refreshing...' : 'Refresh Sheet Data'}
           </button>
         </div>
       </div>
 
-      <div className="glass rounded-3xl overflow-hidden shadow-sm border border-white/40 bg-white/30">
+      <div className="glass rounded-[40px] overflow-hidden shadow-sm border border-dark-navy/10">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-white/10 border-b border-white/20">
-              <th className="px-6 py-4 text-[10px] font-black uppercase text-indigo-900/50 tracking-widest">Product</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase text-indigo-900/50 tracking-widest">Category</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase text-indigo-900/50 tracking-widest">Price</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase text-indigo-900/50 tracking-widest">Stock</th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase text-indigo-900/50 tracking-widest text-right">Actions</th>
+            <tr className="bg-dark-navy/5 border-b border-dark-navy/10">
+              <th className="px-8 py-5 text-[9px] font-black uppercase text-dark-navy/40 tracking-[0.2em]">Product Detail</th>
+              <th className="px-8 py-5 text-[9px] font-black uppercase text-dark-navy/40 tracking-[0.2em]">Category</th>
+              <th className="px-8 py-5 text-[9px] font-black uppercase text-dark-navy/40 tracking-[0.2em]">Price</th>
+              <th className="px-8 py-5 text-[9px] font-black uppercase text-dark-navy/40 tracking-[0.2em]">Inventory</th>
+              <th className="px-8 py-5 text-[9px] font-black uppercase text-dark-navy/40 tracking-[0.2em] text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-dark-navy/5">
             {filtered.map((item) => (
-              <tr key={item.id} className="hover:bg-white/20 transition-colors group">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 glass-dark rounded-xl flex items-center justify-center text-indigo-900/40 border border-white/10">
-                      <Package size={20} />
+              <tr key={item.id} className="hover:bg-dark-navy/[0.02] transition-colors group">
+                <td className="px-8 py-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 glass rounded-2xl flex items-center justify-center text-dark-navy/20 group-hover:text-vibrant-teal transition-colors border border-dark-navy/5 shadow-sm">
+                      <Package size={22} />
                     </div>
                     <div>
-                      <p className="font-bold text-indigo-950">{item.name}</p>
-                      <p className="text-[10px] font-bold text-indigo-900/40 uppercase">{item.size}</p>
+                      <p className="font-black text-deep-charcoal text-sm">{item.name}</p>
+                      <p className="text-[10px] font-black text-dark-navy/30 uppercase tracking-widest">{item.size}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  <span className="text-[10px] font-black px-2 py-1 glass-dark rounded-full text-indigo-700 uppercase tracking-tighter shadow-sm border border-white/10">
+                <td className="px-8 py-6">
+                  <span className="text-[9px] font-black px-3 py-1.5 bg-dark-navy/5 rounded-lg text-dark-navy/60 uppercase tracking-widest border border-dark-navy/5">
                     {item.category}
                   </span>
                 </td>
-                <td className="px-6 py-4 font-black text-indigo-950 underline decoration-indigo-100 underline-offset-4">
-                  Rs. {item.price}
+                <td className="px-8 py-6 font-black text-deep-charcoal text-sm">
+                  {INITIAL_SETTINGS.currency} {item.price}
                 </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
+                <td className="px-8 py-6">
+                  <div className="flex items-center gap-3">
                     <div className={cn(
                       "w-2 h-2 rounded-full",
-                      item.stock > 10 ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : item.stock > 0 ? "bg-orange-500 shadow-[0_0_8px_#f59e0b]" : "bg-rose-500 shadow-[0_0_8px_#f43f5e]"
+                      item.stock > 10 ? "bg-vibrant-teal shadow-[0_0_12px_#00C2A8]" : item.stock > 0 ? "bg-soft-gold shadow-[0_0_12px_#D4AF37]" : "bg-deep-charcoal shadow-[0_0_12px_#1A1A1A]"
                     )} />
-                    <span className="text-xs font-bold text-indigo-900/70">{item.stock} left</span>
+                    <span className="text-[11px] font-black text-dark-navy/60 uppercase tracking-tight">{item.stock} Units Available</span>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-right">
-                  <button className="text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:underline underline-offset-2">Edit</button>
+                <td className="px-8 py-6 text-right">
+                  <button className="text-vibrant-teal font-black text-[10px] uppercase tracking-widest hover:bg-vibrant-teal/10 px-4 py-2 rounded-lg transition-colors border border-transparent hover:border-vibrant-teal/20">Manage</button>
                 </td>
               </tr>
             ))}
@@ -935,13 +854,12 @@ function InventoryView({ inventory, setInventory, onRefresh }: { inventory: Inve
   );
 }
 
-function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreated, addLog }: { 
+function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreated }: {
   threads: ChatThread[], 
   setThreads: any,
   inventory: InventoryItem[], 
   settings: SellerSettings,
-  onOrderCreated: (order: Order) => void,
-  addLog: (msg: string, type?: 'info' | 'error') => void
+  onOrderCreated: (order: Order) => void
 }) {
   const [activeThreadId, setActiveThreadId] = useState(threads[0]?.id);
   const [input, setInput] = useState('');
@@ -1076,11 +994,7 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
         created_at: timestamp
       };
 
-      addLog(`[SYNC] Sending order to "Orders" sheet...`);
-      
       const responseData = await syncOrder(syncPayload);
-
-      addLog(`Sheet Sync Success: ${responseData.message || 'Data Logged'}`);
 
       // 2. Log order in local state ONLY if network worked
       onOrderCreated(order);
@@ -1101,7 +1015,7 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
   };
 
   return (
-    <div className="h-[calc(100vh-160px)] flex gap-6 pb-6 relative">
+    <div className="h-[calc(100vh-160px)] flex gap-6 pb-6 relative justify-center">
       {/* Order Success Notification */}
       <AnimatePresence>
         {orderSuccess && (
@@ -1109,7 +1023,7 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] bg-emerald-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3 border border-emerald-500 ring-4 ring-emerald-500/10"
+            className="absolute top-4 left-1/2 -translate-x-1/2 z-[60] bg-vibrant-teal text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl flex items-center gap-3 border border-vibrant-teal ring-4 ring-vibrant-teal/10"
           >
             <CheckCircle2 size={18} />
             Order Confirmed & Sheet Updated!
@@ -1118,48 +1032,48 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
       </AnimatePresence>
 
       {/* 1. Chat Headers Sidebar (Left) */}
-      <div className="w-80 flex flex-col glass rounded-3xl overflow-hidden border border-white/40 shadow-sm bg-white/30">
-        <div className="p-4 bg-white/10 border-b border-white/20">
+      <div className="w-80 flex flex-col glass rounded-3xl overflow-hidden border border-dark-navy/10 shadow-sm bg-light-grey/50">
+        <div className="p-4 bg-dark-navy/5 border-b border-dark-navy/10">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-900/40" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-dark-navy/40" size={16} />
             <input 
               type="text" 
               placeholder="Search chats..."
-              className="w-full pl-9 pr-4 py-2 bg-white/40 rounded-xl text-xs font-bold text-indigo-900 placeholder:text-indigo-900/30 border-none focus:ring-0"
+              className="w-full pl-9 pr-4 py-2 bg-dark-navy/5 rounded-xl text-xs font-bold text-dark-navy placeholder:text-dark-navy/30 border-none focus:ring-0"
             />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto divide-y divide-white/10">
+        <div className="flex-1 overflow-y-auto divide-y divide-dark-navy/5">
           {threads.map((thread) => (
             <button
               key={thread.id}
               onClick={() => setActiveThreadId(thread.id)}
               className={cn(
                 "w-full p-4 flex gap-3 text-left transition-all relative overflow-hidden group",
-                activeThreadId === thread.id ? "bg-white/40" : "hover:bg-white/20"
+                activeThreadId === thread.id ? "bg-dark-navy/5" : "hover:bg-dark-navy/2"
               )}
             >
               <div className="relative">
-                <div className="w-12 h-12 glass-dark rounded-2xl flex items-center justify-center font-black text-indigo-900 text-lg border border-white/40 shadow-sm">
+                <div className="w-12 h-12 glass rounded-2xl flex items-center justify-center font-black text-dark-navy text-lg border border-dark-navy/10 shadow-sm">
                   {thread.customerName[0]}
                 </div>
                 {thread.unreadCount && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg ring-2 ring-white">
+                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-vibrant-teal text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-lg ring-2 ring-white">
                     {thread.unreadCount}
                   </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-start mb-0.5">
-                  <p className="font-black text-sm text-indigo-950 truncate tracking-tight">{thread.customerName}</p>
-                  <span className="text-[9px] text-indigo-900/40 font-bold uppercase">{new Date(thread.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  <p className="font-black text-sm text-deep-charcoal truncate tracking-tight">{thread.customerName}</p>
+                  <span className="text-[9px] text-dark-navy/40 font-bold uppercase">{new Date(thread.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
-                <p className="text-xs text-indigo-900/60 truncate font-medium">{thread.lastMessage}</p>
+                <p className="text-xs text-dark-navy/60 truncate font-medium">{thread.lastMessage}</p>
                 <div className="mt-1 flex items-center gap-1.5">
                   {thread.isAiEnabled ? (
-                    <span className="text-[8px] bg-emerald-500/10 text-emerald-600 px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border border-emerald-500/20">AI Active</span>
+                    <span className="text-[8px] bg-vibrant-teal/10 text-vibrant-teal px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border border-vibrant-teal/20">AI Active</span>
                   ) : (
-                    <span className="text-[8px] bg-rose-500/10 text-rose-600 px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border border-rose-500/20">Manual</span>
+                    <span className="text-[8px] bg-dark-navy/10 text-dark-navy px-1.5 py-0.5 rounded-full font-black uppercase tracking-widest border border-dark-navy/20">Manual</span>
                   )}
                 </div>
               </div>
@@ -1169,18 +1083,18 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
       </div>
 
       {/* 2. Main Chat Area (Center) */}
-      <div className="flex-1 flex flex-col glass rounded-3xl overflow-hidden border border-white/40 relative shadow-xl bg-white/20">
+      <div className="flex-1 max-w-4xl flex flex-col glass rounded-3xl overflow-hidden border border-dark-navy/10 relative shadow-xl">
         {activeThread ? (
           <>
-            <div className="p-4 bg-white/10 border-b border-white/20 flex items-center justify-between shadow-sm">
+            <div className="p-4 bg-dark-navy/5 border-b border-dark-navy/10 flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 glass rounded-2xl flex items-center justify-center text-indigo-900 border border-white/40 shadow-sm">
+                <div className="w-10 h-10 glass rounded-2xl flex items-center justify-center text-dark-navy border border-dark-navy/10 shadow-sm">
                   <User size={20} />
                 </div>
                 <div>
-                  <p className="font-black text-indigo-950 text-sm tracking-tight">{activeThread.customerName}</p>
+                  <p className="font-black text-deep-charcoal text-sm tracking-tight">{activeThread.customerName}</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-widest">Active Store Conversation</p>
+                    <p className="text-[10px] text-vibrant-teal font-bold uppercase tracking-widest">Active Store Conversation</p>
                     <button 
                       onClick={() => {
                         const queries = [
@@ -1193,7 +1107,7 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
                         const q = queries[Math.floor(Math.random() * queries.length)];
                         simulateCustomerMsg(q);
                       }}
-                      className="text-[9px] bg-rose-500/10 text-rose-600 px-1.5 py-0.5 rounded-full font-black uppercase border border-rose-500/20 hover:bg-rose-500/20 transition-all"
+                      className="text-[9px] bg-vibrant-teal/10 text-vibrant-teal px-1.5 py-0.5 rounded-full font-black uppercase border border-vibrant-teal/20 hover:bg-vibrant-teal/20 transition-all"
                     >
                       Simulate DM
                     </button>
@@ -1201,13 +1115,13 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 px-3 py-1.5 glass-dark rounded-full border border-white/20">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-900/60">AI Assist</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 glass-dark rounded-full border border-dark-navy/10">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-dark-navy/60">AI Assist</span>
                   <button 
                     onClick={() => toggleAi(activeThread.id)}
                     className={cn(
-                      "w-10 h-5 rounded-full p-1 transition-all relative border border-white/10",
-                      activeThread.isAiEnabled ? "bg-indigo-600" : "bg-white/50"
+                      "w-10 h-5 rounded-full p-1 transition-all relative border border-dark-navy/10",
+                      activeThread.isAiEnabled ? "bg-vibrant-teal" : "bg-dark-navy/20"
                     )}
                   >
                     <div className={cn(
@@ -1216,7 +1130,7 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
                     )} />
                   </button>
                 </div>
-                <button className="p-2 text-indigo-900/40 hover:text-indigo-900 transition-colors">
+                <button className="p-2 text-dark-navy/40 hover:text-dark-navy transition-colors">
                   <MoreVertical size={20} />
                 </button>
               </div>
@@ -1225,8 +1139,8 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-6">
               {activeThread.messages.length === 0 && (
                 <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
-                  <Bot size={48} className="mb-4 text-indigo-900" />
-                  <p className="text-sm font-bold uppercase tracking-widest text-indigo-900">Start the conversation</p>
+                  <Bot size={48} className="mb-4 text-dark-navy" />
+                  <p className="text-sm font-bold uppercase tracking-widest text-dark-navy">Start the conversation</p>
                 </div>
               )}
               {activeThread.messages.map((msg) => (
@@ -1237,40 +1151,40 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
                   <div className={cn(
                     "px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm border",
                     msg.role === 'assistant' 
-                      ? "bg-indigo-600 text-white border-indigo-700/50 rounded-tr-none shadow-indigo-600/10"
-                      : "glass border-indigo-200/50 text-indigo-950 rounded-tl-none bg-white/40"
+                      ? "bg-dark-navy text-white border-dark-navy rounded-tr-none"
+                      : "glass border-dark-navy/10 text-deep-charcoal rounded-tl-none"
                   )}>
                     {msg.content}
                   </div>
-                  <span className="text-[9px] font-black text-indigo-900/40 mt-1 px-1 uppercase tracking-tighter">
-                    {msg.role === 'assistant' ? 'Munshi AI / Store' : 'Customer'} • {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <span className="text-[9px] font-black text-dark-navy/40 mt-1 px-1 uppercase tracking-tighter">
+                    {msg.role === 'assistant' ? 'Agent / Store' : 'Customer'} • {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </div>
               ))}
               {isLoading && (
                 <div className="flex items-start">
-                  <div className="bg-indigo-600/10 glass px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 border border-white/20">
-                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="glass px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 border border-dark-navy/10">
+                    <div className="w-1.5 h-1.5 bg-vibrant-teal rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 bg-vibrant-teal rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 bg-vibrant-teal rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="p-4 glass-dark border-t border-white/20 bg-white/20">
+            <div className="p-4 bg-dark-navy/5 border-t border-dark-navy/10">
               <div className="flex gap-2">
                 <input 
                   type="text" 
                   placeholder={activeThread.isAiEnabled ? "AI is assisting... Type to override" : "Type manual message..."}
-                  className="flex-1 px-4 py-3 bg-white/40 rounded-2xl border-none focus:ring-1 focus:ring-indigo-500/30 text-sm placeholder:text-indigo-900/30 text-indigo-950 font-medium"
+                  className="flex-1 px-4 py-3 glass rounded-2xl border-none focus:ring-1 focus:ring-vibrant-teal/30 text-sm placeholder:text-dark-navy/30 text-deep-charcoal font-medium"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                 />
                 <button 
                   onClick={handleSend}
-                  className="p-3 bg-indigo-600 text-white rounded-2xl hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 shadow-xl shadow-indigo-600/20"
+                  className="p-3 bg-vibrant-teal text-white rounded-2xl hover:shadow-lg transition-all active:scale-95 disabled:opacity-50 shadow-xl shadow-vibrant-teal/20"
                   disabled={isLoading || !input.trim()}
                 >
                   <Send size={20} />
@@ -1281,141 +1195,32 @@ function LiveChatsView({ threads, setThreads, inventory, settings, onOrderCreate
         ) : (
           <div className="h-full flex flex-col items-center justify-center p-12 text-center">
             <div className="w-20 h-20 glass-dark rounded-full flex items-center justify-center mb-6 shadow-inner">
-              <MessageSquare className="text-indigo-900/20" size={40} />
+              <MessageSquare className="text-dark-navy/20" size={40} />
             </div>
-            <h3 className="text-lg font-black text-indigo-950">Select a Conversation</h3>
-            <p className="text-sm text-indigo-900/40">Your real-time customer chats appear here.</p>
+            <h3 className="text-lg font-black text-dark-navy">Select a Conversation</h3>
+            <p className="text-sm text-dark-navy/40">Your real-time customer chats appear here.</p>
           </div>
         )}
-      </div>
-
-      {/* 3. Utility Sidebar (Right) */}
-      <div className="w-[340px] flex flex-col gap-6 overflow-y-auto pb-2">
-        {/* Quick Links */}
-        <div className="glass p-6 rounded-3xl border border-white/40 shadow-sm bg-white/30">
-          <h4 className="font-black text-[10px] mb-4 uppercase tracking-widest text-indigo-900/50 flex items-center gap-2">
-            <Zap size={14} className="text-indigo-600" />
-            Quick Store Links
-          </h4>
-          <div className="space-y-2">
-            {[
-              { label: 'Return Policy', icon: FileText },
-              { label: 'Delivery Timings (COD)', icon: Truck },
-              { label: 'Current Inventory Sheet', icon: ClipboardList }
-            ].map((link, i) => (
-              <button key={i} className="w-full flex items-center justify-between p-3 glass-dark rounded-2xl hover:bg-white/30 transition-all border border-white/10 shadow-sm">
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-white/50 rounded-lg text-indigo-600">
-                    <link.icon size={14} />
-                  </div>
-                  <span className="text-[11px] font-bold text-indigo-950">{link.label}</span>
-                </div>
-                <ChevronRight size={14} className="text-indigo-900/30" />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Order Capture Form */}
-        <div className="glass p-6 rounded-3xl border border-rose-400/20 flex-1 flex flex-col shadow-lg bg-rose-50/10">
-          <h4 className="font-black text-[10px] mb-4 uppercase tracking-widest text-rose-500 flex items-center gap-2">
-            <ShoppingCart size={14} />
-            Capture Active Order
-          </h4>
-          <form className="space-y-4" onSubmit={captureOrder}>
-            <div>
-              <label className="text-[9px] font-black text-indigo-900/40 uppercase mb-1 block tracking-widest">Customer Name</label>
-              <input 
-                value={fromName}
-                onChange={(e) => setFromName(e.target.value)}
-                required
-                className="w-full px-3 py-2 text-xs font-bold glass-dark rounded-xl border border-white/20 focus:ring-1 focus:ring-rose-400 outline-none transition-all shadow-sm"
-                placeholder="Ex: Ali Zain"
-              />
-            </div>
-            <div>
-              <label className="text-[9px] font-black text-indigo-900/40 uppercase mb-1 block tracking-widest">WhatsApp Number</label>
-              <input 
-                value={formPhone}
-                onChange={(e) => setFormPhone(e.target.value)}
-                required
-                className="w-full px-3 py-2 text-xs font-bold glass-dark rounded-xl border border-white/20 focus:ring-1 focus:ring-rose-400 outline-none transition-all shadow-sm"
-                placeholder="03xx-xxxxxxx"
-              />
-            </div>
-            <div>
-              <label className="text-[9px] font-black text-indigo-900/40 uppercase mb-1 block tracking-widest">Ordered Item</label>
-              <select 
-                value={selectedProductId}
-                onChange={(e) => setSelectedProductId(e.target.value)}
-                required
-                className="w-full px-3 py-2 text-xs font-bold glass-dark rounded-xl border border-white/20 outline-none shadow-sm cursor-pointer"
-              >
-                <option value="">Select SKU</option>
-                {inventory.map(item => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[9px] font-black text-indigo-900/40 uppercase mb-1 block tracking-widest">Shipping Address</label>
-              <textarea 
-                value={formAddress}
-                onChange={(e) => setFormAddress(e.target.value)}
-                required
-                className="w-full px-3 py-2 text-xs font-bold glass-dark rounded-xl border border-white/20 focus:ring-1 focus:ring-rose-400 outline-none h-20 resize-none transition-all shadow-sm"
-                placeholder="House #, Area, City"
-              />
-            </div>
-            <button 
-              type="submit"
-              className="w-full bg-rose-600 text-white font-black py-4 rounded-2xl hover:bg-rose-700 transition-all text-[10px] uppercase tracking-widest shadow-xl shadow-rose-600/30 active:scale-95 mt-2"
-            >
-              Confirm & Post Order
-            </button>
-          </form>
-        </div>
       </div>
     </div>
   );
 }
 
-function SettingsView({ settings, setSettings, showDebug, setShowDebug }: { settings: SellerSettings, setSettings: any, showDebug: boolean, setShowDebug: any }) {
+function SettingsView({ settings, setSettings }: { settings: SellerSettings, setSettings: any }) {
   return (
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="max-w-2xl glass rounded-[40px] p-8 border border-white/40 shadow-xl bg-white/30"
+      className="max-w-2xl glass rounded-[40px] p-8 border border-dark-navy/10 shadow-xl"
     >
-      <h3 className="text-2xl font-black text-indigo-950 mb-8 underline decoration-rose-400 underline-offset-8 decoration-4 tracking-tight uppercase">Agent Configuration</h3>
+      <h3 className="text-2xl font-black text-deep-charcoal mb-8 underline decoration-vibrant-teal underline-offset-8 decoration-4 tracking-tight uppercase">Agent Configuration</h3>
       
       <div className="space-y-6">
-        <div className="p-6 glass-dark rounded-3xl border border-white/20 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-black text-indigo-950 text-sm uppercase tracking-tight">Developer Debug Console</p>
-              <p className="text-[10px] text-indigo-900/40 font-bold uppercase tracking-widest mt-1">Show live sync logs from Google Sheets</p>
-            </div>
-            <button 
-              onClick={() => setShowDebug(!showDebug)}
-              className={cn(
-                "w-12 h-6 rounded-full transition-colors relative shadow-inner",
-                showDebug ? "bg-emerald-500" : "bg-slate-300"
-              )}
-            >
-              <motion.div 
-                animate={{ x: showDebug ? 24 : 4 }}
-                className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-md" 
-              />
-            </button>
-          </div>
-        </div>
-
         <div>
-          <label className="block text-[10px] font-black text-indigo-900/50 mb-2 uppercase tracking-widest">Store Personality Name</label>
+          <label className="block text-[10px] font-black text-dark-navy/50 mb-2 uppercase tracking-widest">Store Personality Name</label>
           <input 
             type="text" 
-            className="w-full px-4 py-3 glass rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-indigo-950 font-bold"
+            className="w-full px-4 py-3 glass rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-vibrant-teal/20 text-deep-charcoal font-bold"
             value={settings.storeName}
             onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
           />
@@ -1423,10 +1228,10 @@ function SettingsView({ settings, setSettings, showDebug, setShowDebug }: { sett
 
         <div className="grid grid-cols-1 gap-6">
           <div>
-            <label className="block text-[10px] font-black text-indigo-900/50 mb-2 uppercase tracking-widest">Operating Currency</label>
+            <label className="block text-[10px] font-black text-dark-navy/50 mb-2 uppercase tracking-widest">Operating Currency</label>
             <input 
               type="text" 
-              className="w-full px-4 py-3 glass rounded-2xl border-none text-indigo-950 font-bold"
+              className="w-full px-4 py-3 glass rounded-2xl border-none text-deep-charcoal font-bold"
               value={settings.currency}
               onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
             />
@@ -1434,7 +1239,7 @@ function SettingsView({ settings, setSettings, showDebug, setShowDebug }: { sett
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-indigo-900/50 mb-2 uppercase tracking-widest text-center">Urdu Conversation Dialect</label>
+          <label className="block text-[10px] font-black text-dark-navy/50 mb-2 uppercase tracking-widest text-center">Urdu Conversation Dialect</label>
           <div className="grid grid-cols-3 gap-3">
             {['polite', 'casual', 'aggressive'].map((tone) => (
               <button
@@ -1443,8 +1248,8 @@ function SettingsView({ settings, setSettings, showDebug, setShowDebug }: { sett
                 className={cn(
                   "py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all border shadow-sm",
                   settings.urduTone === tone 
-                    ? "bg-indigo-600 text-white border-indigo-700 shadow-indigo-500/20" 
-                    : "glass border-indigo-900/10 text-indigo-900/50 hover:bg-white/40"
+                    ? "bg-dark-navy text-white border-dark-navy shadow-dark-navy/20"
+                    : "glass border-dark-navy/10 text-dark-navy/50 hover:bg-dark-navy/5"
                 )}
               >
                 {tone}
@@ -1454,34 +1259,34 @@ function SettingsView({ settings, setSettings, showDebug, setShowDebug }: { sett
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-rose-500/50 mb-2 uppercase tracking-widest">Custom Gemini API Key (Optional)</label>
+          <label className="block text-[10px] font-black text-vibrant-teal/50 mb-2 uppercase tracking-widest">Custom Gemini API Key (Optional)</label>
           <input 
             type="password" 
             placeholder="AI Studio API Key"
-            className="w-full px-4 py-3 glass rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-rose-500/20 text-indigo-950 font-bold placeholder:text-indigo-900/20"
+            className="w-full px-4 py-3 glass rounded-2xl border-none focus:outline-none focus:ring-2 focus:ring-vibrant-teal/20 text-deep-charcoal font-bold placeholder:text-dark-navy/20"
             value={settings.geminiApiKey || ''}
             onChange={(e) => setSettings({ ...settings, geminiApiKey: e.target.value })}
           />
-          <p className="text-[9px] text-indigo-900/40 mt-1 font-bold italic px-2">Leave blank to use system default key.</p>
+          <p className="text-[9px] text-dark-navy/40 mt-1 font-bold italic px-2">Leave blank to use system default key.</p>
         </div>
 
-        <div className="pt-6 border-t border-white/20">
-          <h4 className="font-black text-[10px] text-indigo-900/50 mb-4 uppercase tracking-widest">Backend Operations</h4>
-          <div className="flex items-center justify-between p-4 glass-dark rounded-2xl border border-white/30 shadow-sm">
+        <div className="pt-6 border-t border-dark-navy/10">
+          <h4 className="font-black text-[10px] text-dark-navy/50 mb-4 uppercase tracking-widest">Backend Operations</h4>
+          <div className="flex items-center justify-between p-4 glass-dark rounded-2xl border border-dark-navy/10 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 glass rounded-xl flex items-center justify-center text-emerald-600 shadow-sm border border-white/20">
+              <div className="w-10 h-10 glass rounded-xl flex items-center justify-center text-vibrant-teal shadow-sm border border-dark-navy/10">
                 <CheckCircle2 size={24} />
               </div>
               <div>
-                <p className="text-xs font-black text-indigo-950">Inventory_Master.xlsx</p>
-                <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-tight">Status: Live & Syncing</p>
+                <p className="text-xs font-black text-deep-charcoal">Inventory_Master.xlsx</p>
+                <p className="text-[10px] text-vibrant-teal font-bold uppercase tracking-tight">Status: Live & Syncing</p>
               </div>
             </div>
-            <button className="text-[10px] font-black text-indigo-600 hover:underline tracking-widest uppercase">Force Sync</button>
+            <button className="text-[10px] font-black text-vibrant-teal hover:underline tracking-widest uppercase">Force Sync</button>
           </div>
         </div>
 
-        <button className="w-full mt-8 bg-indigo-900 text-white font-black py-4 rounded-2xl hover:bg-black transition-all shadow-xl shadow-indigo-950/20 uppercase tracking-widest text-sm active:scale-95">
+        <button className="w-full mt-8 bg-dark-navy text-white font-black py-4 rounded-2xl hover:bg-deep-charcoal transition-all shadow-xl shadow-dark-navy/20 uppercase tracking-widest text-sm active:scale-95">
           Save Profile Changes
         </button>
       </div>
