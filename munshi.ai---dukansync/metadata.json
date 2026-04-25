@@ -1,0 +1,6 @@
+{
+  "name": "Munshi.Ai - DukanSync",
+  "description": "An AI-powered social commerce salesman for WhatsApp and Instagram sellers in Pakistan. Handles DMs in Roman Urdu, checks inventory via Google Sheets, and negotiates sales.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
