@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# WhatsApp Session (Never commit - contains auth tokens!)
+.wwebjs_auth/
+.wwebjs_cache/
+
+# Environment Variables (Never commit API keys!)
+.env
+.env.local
+.env.*.local
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary
+temp/
+tmp/
+dist/
+build/
+
+# Never commit these:
+*.key
+*.pem
+secrets.json
+credentials.json
+
+# Browser cache
+.cache/
+
