@@ -22,7 +22,7 @@ function logServerError(context, err, extra = {}) {
 
 // ⚡ INIT MODEL ONCE (not on every message)
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
 // ⚡ CACHE INVENTORY (refresh every 5 min)
 let cachedInventory = null;
