@@ -1,7 +1,10 @@
 {
+  "outputDirectory": "munshi.ai/dist",
   "rewrites": [
     { "source": "/order-webhook", "destination": "/api/order-webhook" },
     { "source": "/order-status", "destination": "/api/order-status" },
-    { "source": "/health", "destination": "/api/health" }
+    { "source": "/health", "destination": "/api/health" },
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

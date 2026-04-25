@@ -1,10 +1,9 @@
 {
-  "name": "gdgoc-hozai",
+  "name": "munshi-ai-frontend",
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vercel dev",
-    "start": "vercel dev"
+    "build": "cd munshi.ai && npm install && npm run build"
   },
   "engines": {
     "node": ">=18"
